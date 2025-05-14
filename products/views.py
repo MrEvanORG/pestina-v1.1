@@ -9,7 +9,7 @@ from django.contrib import messages
 from .models import Product , Ticket ,BuyTicket , User 
 from .forms import OrderForm , BuyForm , LoginForm , SignUpForm , VerifyNumberForm , SetPasswordForm
 from .addons import *
-
+# these are imports 
 
 def homepage(request):
     return render(request,'nindex.html')

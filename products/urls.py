@@ -24,4 +24,5 @@ urlpatterns = [
     path('confirm_buy/',views.confirm_buy,name='confirm'),
     path('dashboard/',views.dashboard,name='dashboard'),
     path('about-us/',views.about_us,name='about-us'),
+    #new thing
 ]
