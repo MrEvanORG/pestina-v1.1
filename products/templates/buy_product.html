@@ -1,0 +1,257 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Topic Listing Contact Page</title>
+
+    <!-- CSS FILES -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans&display=swap" rel="stylesheet" />
+
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/root/light-root.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/main-styles.css' %}" rel="stylesheet" />
+</head>
+
+<body class="topics-listing-page" id="top" style="text-align: right;">
+    <main>
+        <nav class="navbar navbar-expand-lg">
+            <div class="container">
+                <a class="navbar-brand" href="index.html">
+                    <i class="bi-back"></i>
+                    <span>Topic</span>
+                </a>
+                <div class="d-lg-none ms-auto me-4">
+                    <a class="navbar-icon bi-person smoothscroll" href="#top"></a>
+                </div>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-lg-5 me-lg-auto">
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="{% url 'home' %}"><strong>خانه</strong></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="{% url 'about-us' %}"><strong>درباره ما</strong></a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarLightDropdownMenuLink" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <strong>محصولات</strong>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-light" aria-labelledby="navbarLightDropdownMenuLink">
+                                <li><a class="dropdown-item" href="#">لیست محصولات</a></li>
+                                <li><a class="dropdown-item" href="#">ارسال درخواست خرید پسته</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <div class="d-none d-lg-block">
+                        <a class="navbar-icon bi-person smoothscroll" href="#top"></a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <header class="site-header d-flex flex-column justify-content-center align-items-center">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-5 col-12" style="width: 80%;">
+                        <h2 class="text-white">محصولات / فرم درخواست خرید پسته {{ product.pistachio_name }}</h2>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="section-padding section-bg">
+            <div class="container">
+                <div class="row" style="flex-direction: row-reverse;">
+                    <div class="col-lg-12 col-12">
+                        <h3 class="mb-4 pb-2">لطفا جهت سفارش محصول فرم زیر را  کامل کنید</h3>
+                    </div>
+
+                    <div class="col-lg-5 col-12 mx-auto mt-5 mt-lg-0" style="text-align: center;">
+                        <img class="google-map" src="{{ p.photo.url }}" alt="" width="100%" height="250" style="border:0;" loading="lazy" />
+                        <h5 class="mt-4 mb-2">مشخصات محصول جهت سفارش</h5>
+                        <div class="product-box">
+                            <div class="product-left">
+                                <p><b>پسته {{p.get_kind_display}}</b></p>
+                                <ul>
+                                    <li>وضعیت پسته : {{ p.get_status_display }}</li>
+                                    <li>انس پسته : {{ p.ounce }}</li>
+                                    <li>کیفیت محصول : {{ p.get_quality_display }}</li>
+        
+                                    {% if p.show_inventory %}
+                                    <li>مقدار موجود : {{ p.inventory | format_weight}}</li>
+                                    {% endif %}
+                                    {% if p.discription %}
+                                    <li>توضیحات محصول : {{p.discription}}</li>
+                                    {% endif %}        
+
+                                </ul>
+                            </div>
+
+                            <div class="product-right">
+                                <p><b>توضیحات سفارش محصول</b></p>
+                                <ul>
+
+                                    {% if p.min_order %}
+                                    <li>کف سفارش : {{p.min_order | format_weight}}</li>
+                                    {% endif %}
+        
+                                    {% if p.max_order %}
+                                    <li>سقف سفارش : {{p.max_order | format_weight}}</li>
+                                    {% endif %}    
+
+                                    {% if p.free_shipping and p.is_pestina_product %}
+                                    <li>
+                                        محصول متعلق به پستینا و دارای ارسال رایگان است
+                                    </li>
+                                    {% elif p.is_pestina_product %}
+                                    <li>
+                                    محصول متعلق به پستینا است لازم به ذکر است محصولات پستینا تایید شده و دارای کیفیت بهتری هستند
+                                    </li>
+                                    {% elif p.free_shipping %}
+                                     <li>
+                                         محصول دارای ارسال رایگان است
+                                    </li>
+                                    {% endif %} 
+                                </ul>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-12">
+                        <form class="custom-form contact-form" method="post" action="{% url 'buy-product' pid=p.id %}" role="form">
+                            {% csrf_token %}
+                            <div id="priceBox"
+                                data-price="{{ p.price }}"
+                                data-shipping="{{ p.shipping_cost|default:0 }}"
+                                data-min="{{ p.min_order|default:'' }}"
+                                data-max="{{ p.max_order|default:'' }}">
+                            </div>
+                            <div class="row" style="justify-content:  center;flex-direction: row-reverse;">
+                                <div class="col-lg-6 col-md-6 col-12">
+                                    <div class="form-floating">
+                                        <input type="text" id="name" name="buyer_namelastname" class="form-control" placeholder="Name" required
+                                            {% if form.buyer_namelastname.value %} value="{{ form.buyer_namelastname.value }}" {% endif %} />
+                                        <label for="floatingInput">نام و نام خانوادگی</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-md-6 col-12">
+                                    <div class="form-floating">
+                                        <input type="tel" id="phone" name="buyer_phone" class="form-control" placeholder="mobile" required
+                                            {% if form.buyer_phonenumber.value %} value="{{ form.buyer_phone.value }}" {% endif %} />
+                                        <label for="floatingInput">شماره تماس</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-12 col-12">
+                                    <div class="form-floating">
+                                        <input type="number" id="weightInput" min="0" step="0.2" name="gain_product" class="form-control" placeholder="gain" required
+                                            {% if form.gain_product.value %} value="{{ form.gain_product.value }}" {% endif %} />
+                                        <label for="weightInput">وزن محصول (برحسب کیلوگرم)</label>
+                                        <div id="errorMessage" style="color:red;"></div>
+                                        <p>💰 قیمت محصول: <span id="productCostText"></span></p>
+                                        <p>🚚 هزینه ارسال: <span id="shippingCostText">{{ p.shipping_cost|default:0|format_toman }}</span></p>
+                                        <p><b>💵 جمع کل: <span id="totalPriceText"></span></b></p>
+                                        
+                                        <input type="number" id="weightInput" step="0.1" min="0" placeholder="مقدار وزن (کیلوگرم)">
+                                    </div>
+                                    <div class="form-floating">
+                                        <textarea id="message" name="order_description" class="form-control" placeholder="توضیحات بیشتر (اختیاری)"></textarea>
+                                        <label for="floatingTextarea">توضیحات بیشتر (اختیاری)</label>
+                                    </div>
+                                </div>
+
+                                {% if form.errors %}
+                                    {% for field in form %}
+                                        {% if field.errors %}
+                                            {% for error in field.errors %}
+                                                <blockquote style="text-align: right; margin: 0 16px 11px 0; padding: 0; font-size: 20px; color: red;">
+                                                    {{ field.label }}: {{ error }}
+                                                </blockquote>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+
+                                <div class="col-lg-4 col-12 ms-auto1">
+                                    <button type="submit" class="form-control">مرحله بعد</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer section-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-12 mb-4 pb-2">
+                    <a class="navbar-brand mb-2" href="index.html">
+                        <i class="bi-back"></i>
+                        <span>Topic</span>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6">
+                    <h6 class="site-footer-title mb-3">صفحات مرتبط</h6>
+                    <ul class="site-footer-links">
+                        <li><a class="site-footer-link" href="#">خانه</a></li>
+                        <li><a class="site-footer-link" href="#">لیست محصولات</a></li>
+                        <li><a class="site-footer-link" href="#">درخواست ثبت محصول</a></li>
+                        <li><a class="site-footer-link" href="#">درباره ما</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6 mb-4 mb-lg-0">
+                    <h6 class="site-footer-title mb-3">راه‌های ارتباطی</h6>
+                    <p class="text-white d-flex mb-1">
+                        <a class="site-footer-link" href="tel:034------">034------</a>
+                    </p>
+                    <p class="text-white d-flex">
+                        <a class="site-footer-link" href="mailto:info@company.com">info@company.com</a>
+                    </p>
+                </div>
+                <div class="col-lg-3 col-md-4 col-12 mt-4 mt-lg-0 ms-auto">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            تم روشن
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item" type="button">تم روشن 2</button></li>
+                            <li><button class="dropdown-item" type="button">تم تیره</button></li>
+                            <li><button class="dropdown-item" type="button">تم تیره 2</button></li>
+                        </ul>
+                    </div>
+                    <p class="copyright-text mt-lg-5 mt-4">
+                        کپی‌رایت تیم پستینا 1403<br /><br />
+                        طراحی شده توسط:
+                        <a href="" rel="nofollow" target="t.me/mrevan_org">MrEvan_ORG</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT FILES -->
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/order.product' %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/jquery.sticky.js' %}"></script>
+    <script src="{% static 'js/custom.js' %}"></script>
+</body>
+
+</html>
