@@ -47,8 +47,11 @@ def get_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
-def calculate_price(gain_product,price_product):
-    price = int(gain_product) * int(price_product)
-    string = f'هزینه ارسال رایگان +  {price} تومان  هزینه محصول  > جمع : {price}'
-    return string , price
-
+def calculate_price(product,gain):
+    if product.free_shipping :
+        product_price = int(gain) * int(product.price)
+        all_price = product_price
+    else :
+        product_price = int(gain) * int(product.price)
+        all_price = int(gain) * int(product.price) + int (product.shipping_cost)
+    return  product_price , all_price

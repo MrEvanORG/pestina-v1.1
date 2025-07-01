@@ -3,51 +3,65 @@ from django import forms
 # from .models import tickets
 from .models import User
 from django.core.exceptions import ValidationError
+from products.templatetags.custom_filters import format_weight
+#---------------------------------------------------
 
+#  ------ ticket forms {  
 class OrderForm(forms.Form):
-    buyer_namelastname = forms.CharField(max_length=30,required=True,label='نام و نام خانوادگی')
-    buyer_phonenumber = forms.CharField(max_length=15,required=True,label='شماره تلفن')
-    request_title = forms.CharField(max_length=20,required=True,label='عنوان') #need to fill
-    request_text = forms.CharField(max_length=200,required=True,label='متن درخواست') #need to fill
+    buyer_namelastname = forms.CharField(max_length=30, required=True, label='نام و نام خانوادگی')
+    buyer_phonenumber = forms.CharField(max_length=15, required=True, label='شماره تلفن')
+    request_title = forms.CharField(max_length=20, required=True, label='عنوان')
+    request_text = forms.CharField(max_length=200, required=True, label='متن درخواست')
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super(OrderForm, self).__init__(*args, **kwargs)
 
     def clean_buyer_namelastname(self):
         name = self.cleaned_data['buyer_namelastname']
         if len(name) >= 29:
-            raise forms.ValidationError('بیش از حد مجاز است')
-        elif len(name) < 5 :
-            raise forms.ValidationError('بسیار کوتاه است')
+            raise ValidationError('بیش از حد مجاز است')
+        elif len(name) < 5:
+            raise ValidationError('بسیار کوتاه است')
         return name
-    
-    
+
     def clean_buyer_phonenumber(self):
         phone = self.cleaned_data['buyer_phonenumber']
         if not phone.isdigit():
             raise ValidationError('شماره تلفن باید فقط شامل اعداد باشد')
-        if not len(phone) == 11 :
-            raise ValidationError('شماره تلفن نامعتبر است')
-        
+        if len(phone) != 11:
+            raise ValidationError('شماره تلفن باید ۱۱ رقم باشد')
         return phone
-    
+
     def clean_request_title(self):
         title = self.cleaned_data['request_title']
-        print(len(title))
-        if len(title) > 19 :
-            print('# ERROR RAISED')
-            raise forms.ValidationError('بیش از حد مجاز است')
-        elif len(title) < 5 :
-            raise forms.ValidationError('بسیار کوتاه است')
+        if len(title) > 19:
+            raise ValidationError('بیش از حد مجاز است')
+        elif len(title) < 5:
+            raise ValidationError('بسیار کوتاه است')
         return title
-        
+
     def clean_request_text(self):
         text = self.cleaned_data['request_text']
-        if len(text) >= 198 :
-            raise forms.ValidationError('بیش از حد مجاز است')
-        elif len(text) < 5 :
-            raise forms.ValidationError('بسیار کوتاه است')
+        if len(text) >= 198:
+            raise ValidationError('بیش از حد مجاز است')
+        elif len(text) < 5:
+            raise ValidationError('بسیار کوتاه است')
         return text
+
+    def clean(self):
+        cleaned_data = super().clean()
+        phone = cleaned_data.get("buyer_phonenumber")
+
+        if phone and self.request and not self.request.user.is_authenticated:
+            if User.objects.filter(phone_number=phone).exists():
+                raise ValidationError("این شماره تلفن قبلاً در سایت ثبت شده است. لطفاً ابتدا وارد شوید.")
+        
+        return cleaned_data
+#  ------ ticket forms }  
         
 
-
+#  ------ order forms {  
 class BuyForm(forms.Form):
     buyer_namelastname = forms.CharField(max_length=30,required=True,label='نام و نام خانوادگی') #need to fill
     buyer_phone = forms.CharField(max_length=15,required=True,label='شماره تلفن')
@@ -83,7 +97,63 @@ class BuyForm(forms.Form):
             raise forms.ValidationError('بیش از حد مجاز است')
 
         return text
+
+class CheckGainBuyForm(forms.Form):
+    quantity = forms.DecimalField(label='مقدار سفارش (کیلوگرم)',min_value=0.1)
+    def __init__(self, *args, min=None, max=None, **kwargs):
+        super().__init__(*args,**kwargs)
+        self.min = min
+        self.max = max
+    def clean_quantity(self):
+        gain = self.cleaned_data.get('quantity')
+        if self.min is not None and gain < self.min :
+            raise forms.ValidationError(f'حداقل سفارش {format_weight(self.min)} است')
+        if self.max is not None and gain > self.max:
+            raise forms.ValidationError(f'حداکثر سفارش {format_weight(self.max)} است')
+        return gain
     
+class CheckPersonalBuyForm(forms.Form):
+    buyer_namelastname = forms.CharField(max_length=30,required=True,label='نام و نام خانوادگی')
+    buyer_phone = forms.CharField(max_length=15,required=True,label='شماره تلفن')
+    post_code = forms.CharField(max_length=12,required=True,label='کد پستی')
+    address = forms.CharField(max_length=1499,required=True,label='آدرس') #need to fill
+
+    def clean_buyer_namelastname(self):
+        name = self.cleaned_data['buyer_namelastname']
+        if len(name) >= 29:
+            raise forms.ValidationError('بیش از حد مجاز است')
+        elif len(name) < 5 :
+            raise forms.ValidationError('بسیار کوتاه است')
+        return name
+    
+    
+    def clean_buyer_phone(self):
+        phone = self.cleaned_data['buyer_phone']
+        if not phone.isdigit():
+            raise ValidationError('شماره تلفن باید فقط شامل اعداد باشد')
+        if not len(phone) == 11 :
+            raise ValidationError('شماره تلفن نامعتبر است باید 11 رقم باشد')
+        
+        return phone
+    def clean_post_code(self):
+        code = self.cleaned_data['post_code']
+        if not len(code) == 10 :
+            raise ValidationError('باید 10 رقم باشد معتبر نیست')
+        return code
+        
+    def clean_address(self):
+        address = self.cleaned_data['address']
+        if len(address) < 25 :
+            raise ValidationError('وارد شده کوتاه است لطفا اطلاعات ارسال را کامل تر بنویسید')
+        if len(address) > 1498 : 
+            raise ValidationError('آدرس بیش از حد مجاز است لطفا خلاصه تر بنویسید')
+        return address
+
+#  ------ order forms }  
+
+
+
+#  ------ login forms {  
 class LoginForm(forms.Form):
     phone_number = forms.CharField(max_length=50)
     password = forms.CharField(max_length=120)
@@ -165,7 +235,7 @@ class SetPasswordForm(forms.Form):
             self.add_error('new_password2','رمز عبور و تکرار آن باید یکسان باشند')
  
         return cleaned_data
-        
+#  ------ login forms }  
 
 
 

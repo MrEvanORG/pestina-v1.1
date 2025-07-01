@@ -15,14 +15,12 @@ urlpatterns = [
     path('logout',views.user_logout,name='logout'),
 
     path('send_ticket/<str:ticket_type>/',views.send_ticket,name='send-ticket'),
-    path('ticket_sent/',views.registered,name='registered'),
-
-    path('format-price/<int:amount>/', views.format_price_view, name='format_price'),
+    path('ticket_sent/',views.registered_ticket,name='registered-ticket'),
+    path('buy-product/<int:pid>/',views.buy_product1,name='buy-product'),
+    path('confirm_buy/',views.buy_product2,name='confirm'),
+    path('order_sent/',views.registered_order,name='resgtered-order'),
 
     path('products/',views.view_products,name='products'),
-    path('buy-product/<int:pid>/',views.buy_product,name='buy-product'),
-    path('confirm_buy/',views.confirm_buy,name='confirm'),
     path('dashboard/',views.dashboard,name='dashboard'),
     path('about-us/',views.about_us,name='about-us'),
-    #new thing
 ]

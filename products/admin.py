@@ -40,8 +40,11 @@ class ProductAdmin(admin.ModelAdmin):
         
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ("ticket_id",
+    list_display = (
                     "user",
+                    "ticket_id",
+                    "buyer_namelastname",
+                    "buyer_phone",
                     "ticket_type",
                     "request_title",
                     "request_discription",
@@ -51,16 +54,17 @@ class TicketAdmin(admin.ModelAdmin):
 
 @admin.register(BuyTicket)
 class BuyTicketAdmin(admin.ModelAdmin):
-    list_display = ("ticket_id",
-                    "buyer_namelastname",
-                    "buyer_phone",
-                    "pistachio",
-                    "gain_product",
-                    "order_discription",
-                    "calculated_price",
-                    "ticket_time",
+    list_display = ("id",
+                    "name",
+                    "phone",
+                    "product",
+                    "gain",
+                    "price",
+                    "post_code",
+                    "address",
+                    "buy_time",
                     "ip_address")
-    readonly_fields = ("ticket_id","ticket_time","ip_address")
+    readonly_fields = ("id","buy_time","ip_address")
 
 
 

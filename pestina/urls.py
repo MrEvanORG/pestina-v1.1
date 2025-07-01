@@ -20,14 +20,21 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import re_path
 from django.views.static import serve
+from products import views
 
 urlpatterns = [
     path('',include('products.urls')),
+    path('blog/',include('products.blogurls')),
     path('admin_jan_ammat_ino_be_kasi_nade/', admin.site.urls),
     re_path(r'^media/(?P<path>.*)$', serve,{'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve,{'document_root': settings.STATIC_ROOT}),
 ]
 
+handler404 = 'products.views.custom_404'
+handler500 = lambda request: views.unknown_error(request, status_code=500)
+handler403 = lambda request, exception: views.unknown_error(request, exception, status_code=403)
+handler400 = lambda request, exception: views.unknown_error(request, exception, status_code=400)
+handler405 = lambda request, exception: views.unknown_error(request, exception, status_code=405)
+
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
