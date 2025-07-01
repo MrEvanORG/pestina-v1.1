@@ -7,15 +7,32 @@ from django.contrib.auth import authenticate , login , logout
 from django.contrib import messages
 #----------------------------------------------------------#
 from .models import Product , Ticket ,BuyTicket , User 
-from .forms import OrderForm , BuyForm , LoginForm , SignUpForm , VerifyNumberForm , SetPasswordForm
+from .forms import *
 from .addons import *
+from .blogviews import *
+
+from time import sleep
 # these are imports 
-
+# <------------------- Simple Pages -------------------
 def homepage(request):
-    return render(request,'nindex.html')
+    return render(request,'index.html')
 
+def view_products(request):
+    prd = Product.objects.all()
+    pagin = Paginator(prd,2)
+    page_number = request.GET.get('page')
+    page_obj = pagin.get_page(page_number)
+    context = {'prd': page_obj}
+    return render(request,'products.html',context)
+
+def about_us(request):
+    return render(request,"about_us.html")
+# <------------------- Simple Pages ------------------->
+########################################################
+# <------------------- Login Pages ---------------------
 @csrf_protect
 def login_page(request):
+    return render(request,"soon_page.html",{'text':'پستینایی عزیز به زودی میتوانید حساب کاربری ایجاد کنید ومحصولات خود را در پستینا به فروش برسانید'})
     if request.user.is_authenticated : 
         return redirect(dashboard)
     
@@ -40,6 +57,7 @@ def login_page(request):
 
 @csrf_protect
 def signup(request):
+    return render(request,"soon_page.html",{'text':'پستینایی عزیز به زودی میتوانید حساب کاربری ایجاد کنید ومحصولات خود را در پستینا به فروش برسانید'})
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -131,43 +149,23 @@ def set_password(request):
     if request.method == 'GET':
         return render(request,'l-pages/set-password.html')
 
+@csrf_protect
 def forgotpass(request):
+    return render(request,"soon_page.html",{'text':'پستینایی عزیز به زودی میتوانید حساب کاربری ایجاد کنید ومحصولات خود را در پستینا به فروش برسانید'})
     return render(request,'l-pages/forgot-pass.html')    
 
-def view_products(request):
-    prd = Product.objects.all()
-    pagin = Paginator(prd,2)
-    page_number = request.GET.get('page')
-    page_obj = pagin.get_page(page_number)
-    context = {'prd': page_obj}
-    return render(request,'nproducts.html',context)
+@csrf_protect
+def dashboard(request):
+    if not request.user.is_authenticated : 
+        return redirect(login_page)
+    return render(request,'l-pages/dashboard.html')
 
-# def view_products(request):
-#     products = Product.objects.filter(is_confirmed=True)
-
-#     # فیلترها
-#     if request.GET.get("free_shipping") == "1":
-#         products = products.filter(free_shipping=True)
-
-#     if request.GET.get("pestina") == "1":
-#         products = products.filter(is_pestina_product=True)
-
-#     selected_types = request.GET.getlist("kind")
-#     if selected_types:
-#         products = products.filter(kind__in=selected_types)
-
-#     paginator = Paginator(products, 12)
-#     page_number = request.GET.get("page")
-#     page_obj = paginator.get_page(page_number)
-
-#     context = {
-#         "page_obj": page_obj,
-#         "selected_types": selected_types,
-#         "free_shipping": request.GET.get("free_shipping", ""),
-#         "pestina": request.GET.get("pestina", "")
-#     }
-#     return render(request, "nproducts.html", context)
-
+def user_logout(request):
+    logout(request)
+    return redirect(homepage)
+# ------------------- Login Pages ------------------->
+########################################################
+# <------------------- Order-Buy Pages -----------------
 @csrf_protect
 def send_ticket(request,ticket_type):
     if str(ticket_type) == 'technical':
@@ -189,11 +187,15 @@ def send_ticket(request,ticket_type):
         return redirect(homepage)
     
     if request.method == 'POST':
-        form = OrderForm(data=request.POST)
+        form = OrderForm(data=request.POST, request=request)
             # ticket.save()
         if not form.errors and form.is_valid():
+            if request.user.is_authenticated:
+                user = request.user
+            else:
+                user = None       
             ticket = Ticket.objects.create(
-            user = request.user,
+            user = user,
             buyer_namelastname = form.cleaned_data['buyer_namelastname'],
             buyer_phone = form.cleaned_data['buyer_phonenumber'],
             request_title = form.cleaned_data['request_title'],
@@ -204,7 +206,8 @@ def send_ticket(request,ticket_type):
             #send message
             request.session['buyer-phone'] = form.cleaned_data['buyer_phonenumber']
             request.session['buyer-name'] = form.cleaned_data['buyer_namelastname']
-            return redirect(registered)
+            request.session['form-type'] = ticket_type
+            return redirect(registered_ticket)
         else:
             form_context = {'form':form}
             context.update(form_context)
@@ -213,104 +216,129 @@ def send_ticket(request,ticket_type):
     if request.method == 'GET':
         return render(request,"send_ticket.html",context)
 
-def buy_product(request,pid):
-    order_data = request.session.get("order_data")
+@csrf_protect
+def buy_product1(request,pid):
+    # in the first check gain and calculate price and redirect to buy_product2
+    order_data = request.session.get("form-data")
     if order_data:
-        del request.session["order_data"]
+        del request.session["form-data"]
     
 
     prd = Product.objects.get(id=pid)
     if request.method == 'POST':
-        form = BuyForm(data=request.POST)
+        
+        form = CheckGainBuyForm(data=request.POST,max=prd.max_order,min=prd.min_order)
         if not form.errors and form.is_valid():
-
-            form_data = form.cleaned_data
-            price_string , price = calculate_price(form.cleaned_data['gain_product'],prd.pistachio_price)
-
-            request.session["order_data"] = {
-                "prd":pid,
-                "form_data":form_data,
-                "price":price,
+            pprice , aprice = calculate_price(prd,form.cleaned_data['quantity'])
+            request.session['form-data'] = {
+                'product' : str(pid) ,
+                'pprice' : str(pprice) ,
+                'aprice' : str(aprice),
+                'gain' : str(form.cleaned_data['quantity']) ,
             }
-            context = {'form':form,'p':prd,'price':price_string}
-            return render(request,'calculate.html',context)
+            return redirect(buy_product2)
         else:
-            context = {'form':form,'p':prd} #return prodct and form error and form content
+            context = {'form':form,'p':prd} 
             return render(request,"buy_product.html",context)
-            
+
     elif request.method == 'GET':
         context = {'p':prd}
         return render(request, "buy_product.html", context)
-    
-def confirm_buy(request):
-    order_data = request.session.get("order_data")
-    if not order_data:
+
+@csrf_protect
+def buy_product2(request):
+    form_data = request.session.get("form-data")
+    if not form_data:
         return HttpResponse('sorry something happend in backend process and your order does not save\nThis is an Error !')
-    else:
-        del request.session["order_data"]
-
-
-    form = BuyForm(data=order_data['form_data'])
-    pid = order_data['prd']
-    price = order_data['price']
-
-    print(form,pid,price)
-    prd = Product.objects.get(pistachio_id=pid)
-
-    ticket = BuyTicket.objects.create(
-    buyer_namelastname = form.cleaned_data['buyer_namelastname'],
-    buyer_phone = form.cleaned_data['buyer_phone'],
-    pistachio = prd,
-    gain_product = form.cleaned_data['gain_product'],
-    order_discription = form.cleaned_data['order_discription'],
-    calculated_price = price,
-    ip_address = get_ip(request))
-    ticket.save()
-    Generate_email('buy',form.cleaned_data['buyer_namelastname'],form.cleaned_data['buyer_phone'],0,form.cleaned_data['order_discription'],prd.pistachio_name,form.cleaned_data['gain_product'],price)
-# Generate_email(type,name,phone,title,discription,pistachio,gain,price)
-    context = {'buyer_name':ticket.buyer_namelastname,'buyer_phone':ticket.buyer_phone}
-    return render(request,'registered.html',context)
-
-def about_us(request):
-    return render(request,"nabout_us.html")
-
-def dashboard(request):
-    if not request.user.is_authenticated : 
-        return redirect(login_page)
+    context = {
+    'pprice' : float(form_data.get('pprice')),
+    'free_shipping' :bool(form_data.get('free_shipping')),
+    'aprice' : float(form_data.get('aprice')),
+    'p' : Product.objects.get(id=form_data.get('product')),
+    'gain':  float(form_data.get('gain')),
+    }
+    if request.method == 'GET' :
+        return render(request,"send_order.html",context)
     
-    return render(request,'l-pages/dashboard.html')
+    elif request.method == 'POST':
+        form = CheckPersonalBuyForm(data=request.POST)
+        if not form.errors and form.is_valid():
+            order = BuyTicket.objects.create(
+                name = form.cleaned_data['buyer_namelastname'],
+                phone = form.cleaned_data['buyer_phone'],
+                product = Product.objects.get(id=form_data.get('product')),
+                gain = float(form_data.get('gain')),
+                price = float(form_data.get('aprice')),
+                post_code = int(form.cleaned_data['post_code']),
+                address = form.cleaned_data['address'],
+                ip_address = get_ip(request),
+            )
+            order.save()
+            #send message
+            form_data['order_number'] = str(order.id).zfill(4)
+            form_data['name'] = form.cleaned_data['buyer_namelastname']
+            form_data['phone'] = form.cleaned_data['buyer_phone']
+            form_data['post_code'] = form.cleaned_data['post_code']
+            form_data['address'] = form.cleaned_data['address']
 
-def user_logout(request):
-    logout(request)
-    return redirect(homepage)
+            request.session['form-data'] = form_data
 
-def registered(request):
+            return redirect(registered_order)
+        else:
+            post_context = {**context,'form':form} 
+            return render(request,"send_order.html",post_context)
+
+def registered_ticket(request):
     phone = request.session.get("buyer-phone")
     name = request.session.get("buyer-name")
-    print(phone,name)
-    if not phone:
+    form_type = request.session.get("form-type")
+    if not phone or not name or not form_type:
         return redirect(send_ticket,'purchase')
     try:
+        del request.session["form-type"]
         del request.session["buyer-phone"]
         del request.session["buyer-name"]
     except:
-        pass
-    context = {"buyer_name":name,"buyer_phone":phone}
-    return render(request,'registered.html',context)
+        print("error while get session")
+        return redirect(send_ticket,'purchase')
 
+    context = {"buyer_name":name,"buyer_phone":phone,"form_type":form_type}
+    return render(request,'registered_ticket.html',context)
 
-from django.http import HttpResponse
-from .templatetags.custom_filters import format_toman
-
-def format_price_view(request, amount):
-    try:
-        price = int(amount)
-    except ValueError:
-        return HttpResponse("۰ تومان")
-    return HttpResponse(format_toman(price))
+def registered_order(request):
+    data = request.session.get("form-data")
+    if not data :
+        return redirect(view_products)
     
-    
-    
+    context = {
+        "order_number":(data.get('order_number')),
+        "name":str(data.get('name')),
+        "phone":int(data.get('phone')),
+        "post_code":int(data.get('post_code')),
+        "address":str(data.get('address')),
+        'aprice' : float(data.get('aprice')),
+        'p' : Product.objects.get(id=data.get('product')),
+        'gain':  float(data.get('gain')),
+    }
+    # try:
+    #     del request.session["form-data"]
+    # except:
+    #     pass
+    return render(request,'registered_order.html',context)
+# ------------------- Order-Buy Pages --------------------->
+############################################################
+# <------------------- Error Pages -------------------------
+def custom_404(request, exception):
+    context = {
+        'type':'404',
+        'error':'404',
+               }
+    return render(request, 'error_page.html', status=404,context=context)
 
-
-
+def unknown_error(request, exception=None, status_code=500):
+    context = {
+        'type':'other',
+        'error' : status_code,
+                }
+    return render(request, 'error_page.html',status=status_code ,context=context)
+# ------------------- Error Pages ------------------------->
